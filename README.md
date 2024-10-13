@@ -1,7 +1,7 @@
 
 # Mastering Backend - Build FinPay: A FinTech Solution
 
-![Design preview for the Bento grid coding challenge](https://pub-63da695b9ece47c5b3b49bd78b86d884.r2.dev/Build%20Your%20Own%20Social%20Media%20API%20(1).png)
+![Design preview for the Build FinPay: A FinTech Solution Project](https://pub-63da695b9ece47c5b3b49bd78b86d884.r2.dev/Build%20FinPay%20A%20FinTech%20Solution.png)
 
 ## Welcome! 👋
 
