@@ -13,7 +13,7 @@ Thanks for checking out this backend project.
 
 ## The project
 
-The project is to build your own social media API and get the front end working (the front end has already integrated the API).
+The project is to build **FinPay: A FinTech Solution** and get the front end working (the front end has already integrated the API).
 
 [Click here to view more details about this project.](https://projects.masteringbackend.com/projects/build-your-own-social-media-api)
 
