@@ -35,11 +35,11 @@ You should have a working API with the functionalities mentioned above. Also, th
 
 ## Where to find everything
 
-Your task is to build your own social media API. You will find an SQLite database file called `db.sqlite` inside the root folder. You will find the front end of each project on the project description page. 
+Your task is to Build FinPay: A FinTech Solution. You will find an SQLite database file called `db.sqlite` inside the root folder. You will find the front end of each project on the project description page. 
 
 You can click on the `Preview Frontend` to have a visual view of what the project is all about. 
 
-If you would like the Figma design file to gain experience using professional tools and build more accurate projects faster, you can [subscribe as a PRO member](https://masteringbackend.com/projects).
+If you would like the Figma design file to gain experience using professional tools and build more accurate projects faster, you can [subscribe as a PRO member](https://app.masteringbackend.com/projects).
 
 All the required assets and files for this project are in the root folder. If any image is required, they are already exported for the correct screen size and optimized.
 
