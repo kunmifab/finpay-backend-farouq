@@ -19,18 +19,13 @@ The project is to build **FinPay: A FinTech Solution** and get the front end wor
 
 You can use any tools you like to help you complete the project. So if you've got something you'd like to practice, feel free to give it a go.
 
-As a user: 
+## Objectives
 
-- I want to sign up for an account so that I can share my posts.
-- I want to log in to my account so that I can access my profile and posts.
-- I want to create a new post so that I can share my updates.
-- I want to edit my post so that I can update its content.
-- I want to delete my post so that I can remove it from my profile.
-- I want to like posts so that I can show my appreciation.
-- I want to comment on posts so that I can engage in discussions.
-- I want to follow other users so that I can see their posts in my feed.
-- I want to view my feed so that I can see updates from users I follow.
-- I want to receive notifications for interactions so that I stay informed.
+- Build a secure FinTech application that allows users to create and manage financial transactions and accounts.
+- Integrate with external FinTech APIs to provide real-time currency conversion and virtual card generation.
+- Enable comprehensive user management with authentication, registration, and profile editing capabilities.
+- Implement a notification system to keep users informed about their account activities and transaction statuses.
+- Provide advanced data management features like search, filter, and pagination for invoices, transactions, and cards.
 
 Want some support on the project? [Join our community](https://masteringbackend.com/community) and ask questions in the **#project-builders** channel.
 
