@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-app.use(authRoutes);
+app.use('/api/auth', authRoutes);
 
 
 app.get('/', (req, res) => {
