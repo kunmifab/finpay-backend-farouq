@@ -3,8 +3,11 @@ const router = express.Router();
 const db = require('../utils/db/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { sendEmail } = require('../utils/mailers');
+const { renderTemplate } = require('../utils/templateEngine');
+const authenticate = require('../middlewares/authenticate');
 
-router.post('/signup', async (req, res) => {
+router.post('/register', async (req, res) => {
     if(!req.body) {
         return res.status(400).json(
             { message: 'Please provide all fields',
@@ -12,14 +15,19 @@ router.post('/signup', async (req, res) => {
                 status: 400
             });
     }
-    if(!req.body.email || !req.body.password || !req.body.first_name || !req.body.last_name || !req.body.phone) {
+    if(!req.body.email || !req.body.password || !req.body.name || !req.body.phoneNumber) {
         return res.status(400).json(
             { message: 'All fields are required',
                 success: false,
                 status: 400
             });
     }
-    const { email, password, first_name, last_name, phone } = req.body;
+    const { 
+        email, password, name, phoneNumber, accountType = "Freelancer",  
+        countryCode = null , state = null , 
+        address = null, country = null 
+    } = req.body;
+
     if(await db.user.findUnique({ where: { email } })) {
         return res.status(400).json(
             { message: 'User already exists',
@@ -31,19 +39,58 @@ router.post('/signup', async (req, res) => {
         if (typeof password !== 'string') {
             password = String(password);
         }
-        if (typeof phone !== 'string') {
-            phone = String(phone);
+        if (typeof phoneNumber !== 'string') {
+            phoneNumber = String(phoneNumber);
           }
         const hashedPassword = await bcrypt.hash(password, 10);
+        const verify_email_code = Math.floor(1000 + Math.random() * 9000)
         const user = await db.user.create({
-            data: { email, password: hashedPassword, first_name, last_name, phone }
+            data: { email, password: hashedPassword, name, phoneNumber, accountType, countryCode, state, address, country, verify_email_code }
         }); 
-        res.status(201).json(
-            { message: 'User created successfully',
-                success: true,
-                status: 201,
-                data: user
+
+        try {
+            let to = user.email;
+
+            let html = renderTemplate("verify-email", {
+                name: user.name,
+                code: verify_email_code
             });
+            await sendEmail({
+                to: to,
+                subject: "🎉 Verify your email",
+                html: html
+            });
+        
+        } catch (err) {
+            console.error("Email send failed:", err);
+        }
+        const token = jwt.sign({ 
+                id: user.id, email: user.email, name: user.name, phone: user.phoneNumber 
+            }, 
+            process.env.JWT_SECRET, 
+            { expiresIn: process.env.JWT_EXPIRATION 
+        });
+
+        const userData = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            phone: user.phoneNumber,
+            accountType: user.accountType,
+            countryCode: user.countryCode,
+            state: user.state,
+            address: user.address,
+            country: user.country
+        };
+        res.status(201).json({ 
+            message: 'User registered successfully',
+            success: true,
+            status: 201,
+            data: {
+                token,
+                user: userData
+            }
+        });
     } catch (error) {
         console.log(error);
         res.status(500).json(
@@ -90,7 +137,7 @@ router.post('/login', async (req, res) => {
             });
         }
         const token = jwt.sign({ 
-                id: user.id, email: user.email, first_name: user.first_name, last_name: user.last_name, phone: user.phone 
+                id: user.id, email: user.email, name: user.name, phone: user.phone 
             }, 
             process.env.JWT_SECRET, 
             { expiresIn: process.env.JWT_EXPIRATION
@@ -99,8 +146,7 @@ router.post('/login', async (req, res) => {
         const userData = {
             id: user.id,
             email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
+            name: user.name,
             phone: user.phone
         };
         res.status(200).json({ 
@@ -122,12 +168,101 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.post('/logout', async (req, res) => {
-    const { token } = req.body;
-    const user = await db.user.findUnique({ where: { token } });
+router.post('/logout', authenticate, async (req, res) => {
+    const user = await db.user.findUnique({ where: { id: req.user.id } });
     if(!user) {
-        return res.status(401).json({ message: 'Invalid credentials', success: false, status: 401 });
+        return res.status(400).json({ 
+            message: 'Invalid credentials', 
+            success: false, 
+            status: 400 
+        });
     }
+    const tokenBlacklist = [];
+    tokenBlacklist.push(req.headers['x-auth-token']);
+    return res.status(200).json({ 
+        message: 'Logout successfully', 
+        success: true, 
+        status: 200 
+    });
+});
+
+router.post('/verify-email', authenticate, async (req, res) => {
+    if(!req.body || !req.body.code) {
+        return res.status(400).json({ 
+            message: 'Please provide code', 
+            success: false, 
+            status: 400 
+        });
+    }
+    const { code } = req.body;
+
+    if(typeof code !== 'number') {
+        return res.status(400).json({ 
+            message: 'Code must be a number', 
+            success: false, status: 400 });
+    }
+    try {
+        const user = await db.user.findUnique({ where: { id: req.user.id } });
+        if(!user.verify_email_code || user.verify_email_code !== code) {
+            return res.status(400).json({ 
+                message: 'Invalid code', 
+                success: false, status: 400 });
+        }
+        await db.user.update({ where: { id: req.user.id }, data: { verify_email_code: null } });
+        return res.status(200).json({ 
+            message: 'Email verified successfully', 
+            success: true, 
+            status: 200 
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ 
+            message: error.message, 
+            success: false, 
+            status: 500 
+        });
+    }
+});
+
+router.post('/password/reset', async (req, res) => {
+    if(!req.body || !req.body.email || !req.body.old_password || !req.body.new_password) {
+        return res.status(400).json({
+            message: 'Please provide email, old password and new password',
+            success: false,
+            status: 400
+        });
+    }
+    const { email, old_password, new_password } = req.body;
+    const user = await db.user.findUnique({ where: { email } });
+    
+    bcrypt.compare(old_password, user.password, (err, result) => {
+        if(err || !result) {
+            return res.status(401).json({ 
+                message: 'Invalid credentials', 
+                success: false, 
+                status: 401 
+            });
+        }
+    });
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+    await db.user.update({ where: { email }, data: { password: hashedPassword } });
+    const userData = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+        accountType: user.accountType,
+        countryCode: user.countryCode,
+        state: user.state,
+        address: user.address,
+        country: user.country
+    };
+    return res.status(200).json({ 
+        message: 'Password reset successfully', 
+        success: true, 
+        status: 200,
+        data: userData
+    });
 });
 
 module.exports = router;
