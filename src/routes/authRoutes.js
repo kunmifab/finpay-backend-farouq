@@ -208,7 +208,7 @@ router.post('/verify-email', authenticate, async (req, res) => {
                 message: 'Invalid code', 
                 success: false, status: 400 });
         }
-        await db.user.update({ where: { id: req.user.id }, data: { verify_email_code: null } });
+        await db.user.update({ where: { id: req.user.id }, data: { verify_email: 1 } });
         return res.status(200).json({ 
             message: 'Email verified successfully', 
             success: true, 
@@ -263,6 +263,60 @@ router.post('/password/reset', async (req, res) => {
         status: 200,
         data: userData
     });
+});
+
+router.post('/send-verify-email', authenticate, async (req, res) => {
+    
+    const user = await db.user.findUnique({where: {id: req.user.id}});
+    if(!user){
+        return res.status(404).json({
+            message: "User not found",
+            status_code: 404
+        });
+    }
+
+    if(user.verify_email == 1){
+        return res.status(400).json({
+            message: "Email already verified",
+            status_code: 400
+        });
+    }
+
+    let verify_email_code;
+    if(!user.verify_email_code){
+        verify_email_code = Math.floor(1000 + Math.random() * 9000)
+        await db.user.update({where: {id: req.user.id}, data: {verify_email_code: verify_email_code}});
+    }else{
+        verify_email_code = user.verify_email_code;
+    }
+    
+    //send verify email
+    try {
+        let to = user.email;
+
+        let html = renderTemplate("verify-email", {
+                name: user.name,
+            code: verify_email_code
+        });
+        await sendEmail({
+            to: to,
+            subject: "🎉 Verify your email",
+            html: html
+        });
+        console.log("Email sent successfully");
+        return res.status(200).json({  
+            success: true,
+            message: "Verification code sent to your email. Please check your email and enter the code to continue",
+            status_code: 200
+        });
+    } catch (err) {
+        console.error("Email send failed:", err);
+        return res.status(500).json({
+            success: false,
+            message: "Email send failed",
+            status_code: 500
+        });
+    }
 });
 
 module.exports = router;
