@@ -96,6 +96,11 @@ router.post('/register', async (req, res) => {
             },
             {
                 userId: user.id,
+                currency: "GBP",
+                amount: 0
+            },
+            {
+                userId: user.id,
                 currency: "NGN",
                 amount: 0
             }]
