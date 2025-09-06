@@ -82,6 +82,25 @@ router.post('/register', async (req, res) => {
             address: user.address,
             country: user.country
         };
+
+        const balance = await db.balance.createMany({
+            data: [ {
+                userId: user.id,
+                currency: "USD",
+                amount: 0
+            },
+            {
+                userId: user.id,
+                currency: "EUR",
+                amount: 0
+            },
+            {
+                userId: user.id,
+                currency: "NGN",
+                amount: 0
+            }]
+        });
+
         res.status(201).json({ 
             message: 'User registered successfully',
             success: true,

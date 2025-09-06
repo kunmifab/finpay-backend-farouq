@@ -28,4 +28,29 @@ model User {
   verify_email        Int      @default(0)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+
+  balances Balance[]
+}
+
+model Balance {
+  id        String @id @default(cuid())
+  amount    Float  @default(0.00) @db.Float
+  currency  String @db.VarChar(10) // E.g., "USD", "EUR", "NGN"
+  userId    String
+  user      User   @relation(fields: [userId], references: [id])
+
+  // This ensures a user can only have one balance per currency
+  @@unique([userId, currency])
+}
+
+model ExchangeRate {
+  id          String   @id @default(uuid()) @db.Char(36)
+  base        String   @unique @db.Char(3)
+  gbp         Decimal? @db.Decimal(20,10)
+  eur         Decimal? @db.Decimal(20,10)
+  ngn         Decimal? @db.Decimal(20,10)
+  cad         Decimal? @db.Decimal(20,10)
+  effectiveAt DateTime
+  provider    String?  @db.VarChar(50)
+  createdAt   DateTime @default(now())
 }

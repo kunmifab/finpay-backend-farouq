@@ -1,0 +1,24 @@
+-- CreateTable
+CREATE TABLE `Balance` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `usd` FLOAT NULL DEFAULT 0.00,
+    `gbp` FLOAT NULL DEFAULT 0.00,
+    `eur` FLOAT NULL DEFAULT 0.00,
+    `ngn` FLOAT NULL DEFAULT 0.00,
+    `total` FLOAT NULL DEFAULT 0.00,
+    `currency` VARCHAR(191) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ExchangeRate` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `gbp` FLOAT NULL DEFAULT 0.00,
+    `eur` FLOAT NULL DEFAULT 0.00,
+    `ngn` FLOAT NULL DEFAULT 0.00,
+    `cad` FLOAT NULL DEFAULT 0.00,
+    `currency` VARCHAR(191) NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
