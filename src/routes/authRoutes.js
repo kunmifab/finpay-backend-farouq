@@ -83,6 +83,7 @@ router.post('/register', async (req, res) => {
             country: user.country
         };
 
+        //create default balances
         const balance = await db.balance.createMany({
             data: [ {
                 userId: user.id,
@@ -104,6 +105,52 @@ router.post('/register', async (req, res) => {
                 currency: "NGN",
                 amount: 0
             }]
+        });
+
+        //create default accounts
+        const account = await db.account.createMany({
+            data: [
+                { 
+                    userId: user.id, 
+                    currency: "USD",  
+                    accountHolder:  user.name,
+                    bankName: "First Bank of Nigeria",
+                    accountNumber: user.accountNumber,
+                    routingNumber: "0000000000",
+                    accountType: "checking",
+                    address: null
+                },
+                { 
+                    userId: user.id, 
+                    currency: "EUR",  
+                    accountHolder:  user.name,
+                    bankName: "First Bank of Nigeria",
+                    accountNumber: user.accountNumber,
+                    routingNumber: "0000000000",
+                    accountType: "checking",
+                    address: null
+                },
+                { 
+                    userId: user.id, 
+                    currency: "GBP",  
+                    accountHolder:  user.name,
+                    bankName: "First Bank of Nigeria",
+                    accountNumber: user.accountNumber,
+                    routingNumber: "0000000000",
+                    accountType: "checking",
+                    address: null
+                },
+                { 
+                    userId: user.id, 
+                    currency: "NGN",  
+                    accountHolder:  user.name,
+                    bankName: "First Bank of Nigeria",
+                    accountNumber: user.accountNumber,
+                    routingNumber: "0000000000",
+                    accountType: "checking",
+                    address: null
+                }
+            ]
         });
 
         res.status(201).json({ 

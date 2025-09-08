@@ -5,6 +5,7 @@ const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const authenticate = require('./middlewares/authenticate');
 const { startExchangeRateJob, fetchAndStoreExchangeRate } = require('./job/exchangeRateJob');
+const invoiceRoutes = require('./routes/invoiceRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,6 +15,7 @@ app.use(bodyParser.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api', authenticate, dashboardRoutes);
+app.use('/api/invoices', authenticate, invoiceRoutes);
 
 startExchangeRateJob();
 

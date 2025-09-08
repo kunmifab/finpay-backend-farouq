@@ -30,6 +30,8 @@ model User {
   updatedAt           DateTime @updatedAt
 
   balances Balance[]
+  accounts Account[]
+  invoices Invoice[]
 }
 
 model Balance {
@@ -53,4 +55,53 @@ model ExchangeRate {
   effectiveAt DateTime
   provider    String?  @db.VarChar(50)
   createdAt   DateTime @default(now())
+}
+
+model Account {
+  id                String @id @default(cuid())
+  accountHolder     String?  @db.VarChar(191)
+  bankName          String?  @db.VarChar(191)
+  accountNumber     String?  @db.VarChar(191)
+  routingNumber     String?  @db.VarChar(191)
+  accountType       String?  @db.VarChar(20)
+  address           String?  @db.VarChar(191)
+  currency          String @db.VarChar(10) // E.g., "USD", "EUR", "NGN"
+  userId            String
+  user              User   @relation(fields: [userId], references: [id])
+
+  // This ensures a user can only have one account per currency
+  @@unique([userId, currency])
+}
+
+model Invoice {
+  id          String @id @default(cuid())
+  currency    String @db.VarChar(10) // E.g., "USD", "EUR", "NGN"
+  sharableUrl String? @db.VarChar(191)
+  issueDate   DateTime
+  dueDate     DateTime
+  status      String? @db.VarChar(191)
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  items       InvoiceItem[]
+  customer    InvoiceCustomer[]
+}
+
+model InvoiceItem {
+  id          String @id @default(cuid())
+  description String @db.VarChar(191)
+  quantity    Int
+  amount      Float @db.Float
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id])
+}
+
+model InvoiceCustomer {
+  id        String @id @default(cuid())
+  name      String @db.VarChar(191)
+  email     String @db.VarChar(191)
+  state     String?  @db.VarChar(191)
+  address   String?  @db.VarChar(191)
+  country   String?  @db.VarChar(191)
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
 }
