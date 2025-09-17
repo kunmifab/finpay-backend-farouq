@@ -7,6 +7,7 @@ const { sendEmail } = require('../utils/mailers');
 const { renderTemplate } = require('../utils/templateEngine');
 const authenticate = require('../middlewares/authenticate');
 
+const { postSignupQueue } = require('../job/queues');
 router.post('/register', async (req, res) => {
     if(!req.body) {
         return res.status(400).json(
@@ -107,51 +108,7 @@ router.post('/register', async (req, res) => {
             }]
         });
 
-        //create default accounts
-        const account = await db.account.createMany({
-            data: [
-                { 
-                    userId: user.id, 
-                    currency: "USD",  
-                    accountHolder:  user.name,
-                    bankName: "First Bank of Nigeria",
-                    accountNumber: user.accountNumber,
-                    routingNumber: "0000000000",
-                    accountType: "checking",
-                    address: null
-                },
-                { 
-                    userId: user.id, 
-                    currency: "EUR",  
-                    accountHolder:  user.name,
-                    bankName: "First Bank of Nigeria",
-                    accountNumber: user.accountNumber,
-                    routingNumber: "0000000000",
-                    accountType: "checking",
-                    address: null
-                },
-                { 
-                    userId: user.id, 
-                    currency: "GBP",  
-                    accountHolder:  user.name,
-                    bankName: "First Bank of Nigeria",
-                    accountNumber: user.accountNumber,
-                    routingNumber: "0000000000",
-                    accountType: "checking",
-                    address: null
-                },
-                { 
-                    userId: user.id, 
-                    currency: "NGN",  
-                    accountHolder:  user.name,
-                    bankName: "First Bank of Nigeria",
-                    accountNumber: user.accountNumber,
-                    routingNumber: "0000000000",
-                    accountType: "checking",
-                    address: null
-                }
-            ]
-        });
+        await postSignupQueue.add('post-signup', { userId: user.id });
 
         res.status(201).json({ 
             message: 'User registered successfully',
