@@ -31,6 +31,8 @@ model User {
 
   stripeConnectId     String?  @unique
   flutterwaveCustomerId   String?  @unique
+  mapleradCustomerId   String?  @unique
+  mapleradTier        String? 
   
   balances Balance[]
   accounts Account[]
