@@ -136,7 +136,7 @@ model Card {
   autoApprove     Boolean?
   address         Address? @relation(fields: [addressId], references: [id])
   addressId       String?
-  reference       String?
+  reference       String? @unique
   card_reference  String?
   createdAt       DateTime 
   updatedAt       DateTime @default(now())
@@ -147,10 +147,10 @@ model Card {
 
 model Address {
   id        String @id @default(cuid())
-  street     String @db.VarChar(191)
-  city      String @db.VarChar(191)
-  state     String @db.VarChar(191)
-  country   String @db.VarChar(191)
-  postalCode String @db.VarChar(191)
+  street     String? @db.VarChar(191)
+  city      String? @db.VarChar(191)
+  state     String? @db.VarChar(191)
+  country   String? @db.VarChar(191)
+  postalCode String? @db.VarChar(191)
   card       Card[]
 }

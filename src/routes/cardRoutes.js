@@ -37,7 +37,7 @@ router.post('/', async (req, res) => {
             currency: currency,
             brand: brand,
             type: type,
-            amount: 100 // $1 or 1NGN
+            amount: 200 // $2 or 2NGN
         });
 
         if(!createMapleradCard) {
@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
             data: {
                 userId: req.user.id,
                 holder_name: req.user.name,
-                reference: createMapleradCard.reference,
+                reference: createMapleradCard.data.reference,
                 currency: currency,
                 type: type,
                 brand: brand,

@@ -32,13 +32,19 @@ async function getCards(data) {
 
 async function getCard(data) {
   const { card_id } = data;
-  const res = await mapleradAxios.get(`issuing/${card_id}`, {
-    headers: { 
-        accept: 'application/json', 
-        'content-type': 'application/json'
-     },
-  });
-  return res.data ?? null;
+  try {
+    const res = await mapleradAxios.get(`issuing/${card_id}`, {
+      headers: { 
+          accept: 'application/json', 
+          'content-type': 'application/json'
+      },
+    });
+    return res.data ?? null;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+ 
 }
 
 async function freezeCard(data) {

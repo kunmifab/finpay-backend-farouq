@@ -7,11 +7,13 @@ const authenticate = require('./middlewares/authenticate');
 const { startExchangeRateJob, fetchAndStoreExchangeRate } = require('./job/exchangeRateJob');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const cardRoutes = require('./routes/cardRoutes');
+const mapleradWebhookRoute = require('./routes/mapleradWebhookRoute');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use('/webhooks/maplerad', bodyParser.raw({ type: 'application/json' }), mapleradWebhookRoute);
 app.use(bodyParser.json());
 
 app.use('/api/auth', authRoutes);
