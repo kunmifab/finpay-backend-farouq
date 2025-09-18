@@ -122,10 +122,10 @@ router.post('/', async (req, res) => {
             sharableUrl: sharableUrl
         }
 
-        res.status(200).json({
+        res.status(201).json({
             message: 'Invoice created successfully',
             success: true,
-            status: 200,
+            status: 201,
             data: invoiceData
         });
     } catch (error) {

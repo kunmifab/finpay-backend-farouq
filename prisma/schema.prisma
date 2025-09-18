@@ -37,6 +37,7 @@ model User {
   balances Balance[]
   accounts Account[]
   invoices Invoice[]
+  cards    Card[]
 }
 
 model Balance {
@@ -113,4 +114,43 @@ model InvoiceCustomer {
   country   String?  @db.VarChar(191)
   invoiceId String
   invoice   Invoice @relation(fields: [invoiceId], references: [id])
+}
+
+model Card {
+  id              String @id @default(cuid())
+  holder_name     String @db.VarChar(191)
+  cardNumber      String? @db.VarChar(191)
+  maskedPan       String? @db.VarChar(191)
+  expiry          String? @db.VarChar(191)
+  cvv             String? @db.VarChar(191)
+  status          String? @db.VarChar(191)
+  type            String? @db.VarChar(191)
+  brand           String? @db.VarChar(191)
+  firstSix        String? @db.VarChar(191)
+  lastFour        String? @db.VarChar(191)
+  expiry_month    String? @db.VarChar(191)
+  expiry_year     String? @db.VarChar(191)
+  currency        String? @db.VarChar(191)
+  balance         Float? @db.Float
+  balanceUpdatedAt DateTime?
+  autoApprove     Boolean?
+  address         Address? @relation(fields: [addressId], references: [id])
+  addressId       String?
+  reference       String?
+  card_reference  String?
+  createdAt       DateTime 
+  updatedAt       DateTime @default(now())
+
+  userId          String
+  user            User   @relation(fields: [userId], references: [id])
+}
+
+model Address {
+  id        String @id @default(cuid())
+  street     String @db.VarChar(191)
+  city      String @db.VarChar(191)
+  state     String @db.VarChar(191)
+  country   String @db.VarChar(191)
+  postalCode String @db.VarChar(191)
+  card       Card[]
 }
