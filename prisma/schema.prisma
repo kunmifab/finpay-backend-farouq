@@ -75,12 +75,12 @@ model Account {
   userId            String
   user              User   @relation(fields: [userId], references: [id])
 
-  provider          String?  @db.VarChar(50)   // e.g., "stripe"
+  provider          String  @db.VarChar(50)   // e.g., "stripe"
   providerRef       String?  @db.VarChar(191)  // e.g., fa_..., ba_..., financial address id
   status            String?  @db.VarChar(50)   // "active"|"pending"|"failed"
   meta              Json?
   // This ensures a user can only have one account per currency
-  @@unique([userId, currency])
+  @@unique([userId, currency, provider])
 }
 
 model Invoice {

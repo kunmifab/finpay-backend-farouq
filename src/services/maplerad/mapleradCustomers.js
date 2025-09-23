@@ -91,7 +91,111 @@ async function getOrCreateCustomerId(user, db) {
   return created.id;
 }
 
+// create vitual account NGN and USD for a given customer id
+async function createVirtualAccountNGN(customerId, user) {
+  const payload = {
+    customer_id: customerId,
+    currency: 'NGN'
+  };
+
+  try {
+    const res = await mapleradAxios.post('collections/virtual-account', payload, {
+      headers: { 
+          accept: 'application/json', 
+          'content-type': 'application/json'
+      },
+    });
+
+    await db.account.create({
+      data: {
+        userId: user.id,
+        currency: 'NGN',
+        status: 'active',
+        provider: 'maplerad',
+        providerRef: res.data.data.reference,
+        accountHolder: user.name,
+        bankName: res.data.data.bank_name,
+        accountNumber: res.data.data.account_number,
+        routingNumber: null,
+        accountType: 'savings',
+        meta: {
+          reason: 'virtual_account_created'
+        }
+      },
+    });
+    return res.data.data;
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to create virtual account');
+  }
+}
+
+async function createVirtualAccountUSD(customerId, user) {
+  const payload = {
+    customer_id: customerId,
+    occupation: 'Freelancer'
+  };
+
+  try {
+    const res = await mapleradAxios.post('collections/virtual-account/usd', payload, {
+      headers: { 
+          accept: 'application/json', 
+          'content-type': 'application/json'
+      },
+    });
+
+    await db.account.create({
+      data: {
+        userId: user.id,
+        currency: 'USD',
+        status: 'pending',
+        accountType: 'savings',
+        provider: 'maplerad',
+        providerRef: res.data.data.reference,
+        meta: res.data.data,
+      },
+    });
+
+    return res.data.data;
+  } catch (error) {
+    console.log(error);
+    throw new Error('Failed to create virtual account');
+  }
+}
+
+async function checkAccountRequestStatus(reference) {
+  const payload = {
+    reference: reference,
+  };
+
+  const res = await mapleradAxios.get(`collections/virtual-account/status/${reference}`, {
+    headers: { 
+        accept: 'application/json', 
+        'content-type': 'application/json'
+     },
+  });
+
+  return res.data.data;
+}
+
+async function getVirtualAccountById(id) {
+  const res = await mapleradAxios.get(`collections/virtual-account/${id}`, {
+    headers: { 
+        accept: 'application/json', 
+        'content-type': 'application/json'
+     },
+  });
+
+  return res.data.data;
+}
+
+
+
 module.exports = {
   getOrCreateCustomerId,
-  upgradeCustomerTier1
+  upgradeCustomerTier1,
+  createVirtualAccountNGN,
+  createVirtualAccountUSD,
+  checkAccountRequestStatus,
+  getVirtualAccountById
 };

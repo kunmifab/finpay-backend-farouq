@@ -29,7 +29,7 @@ async function ensureConnectAccount(user) {
 // Optional helper to upsert your Account row
 async function upsertAccountRow({ userId, currency, status, details, provider, providerRef, meta }) {
   await db.account.upsert({
-    where: { userId_currency: { userId, currency } },
+    where: { userId_currency_provider: { userId, currency, provider } },
     update: {
       accountHolder: details?.beneficiary || null,
       bankName: details?.bankName || details?.bank_name || details?.account_bank_name || null,

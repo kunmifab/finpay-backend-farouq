@@ -4,8 +4,6 @@ const { getOrCreateCustomerId, upgradeCustomerTier1 } = require('./mapleradCusto
 
 
 async function ensureUserFinancialSetupMaplerad(user) {
-
-    // 1) Customer id (create/search, and persist if schema has mapleradCustomerId)
     const customerId = await getOrCreateCustomerId(user, db);
     let data = {
       'customerId': customerId,

@@ -4,6 +4,7 @@ const { connection, POST_SIGNUP_QUEUE } = require('./queues');
 const db = require('../utils/db/prisma');
 const { ensureUserFinancialSetup } = require('../services/financialAccounts.service');
 const { ensureUserFinancialSetupMaplerad } = require('../services/maplerad/financialAccounts.service');
+const { createVirtualAccountNGN, createVirtualAccountUSD } = require('../services/maplerad/mapleradCustomers');
 require('dotenv').config();
 
 const worker = new Worker(
@@ -16,6 +17,14 @@ const worker = new Worker(
 
     const result = await ensureUserFinancialSetup(user);
     const mapleradResult = await ensureUserFinancialSetupMaplerad(user);
+    try {
+      const virtualAccountNGN = await createVirtualAccountNGN(mapleradResult.customerId, user);
+      const virtualAccountUSD = await createVirtualAccountUSD(mapleradResult.customerId, user);
+    } catch (error) {
+      console.log(error);
+      throw new Error('Failed to create virtual account');
+    }
+
     // Persist Connect id if newly created
     if (!user.stripeConnectId && result.connectAccountId) {
       await db.user.update({

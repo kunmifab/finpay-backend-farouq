@@ -8,6 +8,7 @@ const { startExchangeRateJob, fetchAndStoreExchangeRate } = require('./job/excha
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const cardRoutes = require('./routes/cardRoutes');
 const mapleradWebhookRoute = require('./routes/mapleradWebhookRoute');
+const walletRoutes = require('./routes/walletRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', authenticate, dashboardRoutes);
 app.use('/api/invoices', authenticate, invoiceRoutes);
 app.use('/api/cards', authenticate, cardRoutes);
+app.use('/api/wallets', authenticate, walletRoutes);
 
 startExchangeRateJob();
 

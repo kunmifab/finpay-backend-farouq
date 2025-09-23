@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../utils/db/prisma');
 const cardService = require('../services/maplerad/cardService');
+const { getVirtualAccountById, checkAccountRequestStatus } = require('../services/maplerad/mapleradCustomers');
 
 require('dotenv').config();
 
@@ -178,6 +179,36 @@ async function webhookController(req, res){
     
             console.log('Card updated successfully');
         }
+    }else if(body.event === 'account.creation.successful'){
+        console.log('Account creation successful', body);
+        const reference = body.reference;
+        const accountId = body.id;
+        const virtualAccount = await db.account.findFirst({
+            where: { providerRef: reference }
+        });
+        if(virtualAccount && virtualAccount.status == 'pending' && virtualAccount.currency == 'USD'){
+            try {
+                const account = await getVirtualAccountById(accountId);
+                if(account){
+                    await db.account.update({
+                        where: { id: virtualAccount.id },
+                        data: { 
+                            status: 'active', 
+                            accountHolder: account.account_name,
+                            bankName: account.bank_name,
+                            accountNumber: account.account_number,
+                            routingNumber: null,
+                            accountType: 'checkings',
+                            meta: account
+                        }
+                    });
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        }
+    }else{
+        console.log('Webhook received', body.event);
     }
     
     
