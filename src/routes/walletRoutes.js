@@ -343,4 +343,52 @@ router.post('/fund', async (req, res) => {
     }
 });
 
+router.get('/expenses-income', async (req, res) => {
+    const currency = req.query.currency ?? 'USD';
+    try {
+        const expenses = await db.transaction.findMany({
+            where: {
+                userId: req.user.id,
+                type: 'debit',
+                currency: currency
+            }
+        });
+        
+        const income = await db.transaction.findMany({
+            where: {
+                userId: req.user.id,
+                type: 'credit',
+                currency: currency
+            }
+        });
+
+        let totalExpenses = 0;
+        let totalIncome = 0;
+        expenses.forEach(expense => {
+            totalExpenses += expense.amount;
+        });
+        income.forEach(income => {
+            totalIncome += income.amount;
+        });
+
+        return res.status(200).json({
+            message: 'Expenses and income retrieved successfully',
+            success: true,
+            status: 200,
+            data: {
+                expenses: totalExpenses,
+                income: totalIncome,
+                currency: currency
+            }
+        });
+    }catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: error.message,
+            success: false,
+            status: 500
+        });
+    }
+});
+
 module.exports = router;
