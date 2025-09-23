@@ -34,10 +34,12 @@ model User {
   mapleradCustomerId   String?  @unique
   mapleradTier        String? 
   
-  balances Balance[]
-  accounts Account[]
-  invoices Invoice[]
-  cards    Card[]
+  balances                  Balance[]
+  accounts                  Account[]
+  invoices                  Invoice[]
+  cards                     Card[]
+  transactions              Transaction[]
+  transfer_beneficiaries    TransferBeneficiary[]
 }
 
 model Balance {
@@ -152,5 +154,40 @@ model Address {
   state     String? @db.VarChar(191)
   country   String? @db.VarChar(191)
   postalCode String? @db.VarChar(191)
-  card       Card[]
+  card                      Card[]
+  transfer_beneficiaries    TransferBeneficiary[]
+}
+
+model Transaction {
+  id            String  @id @default(cuid())
+  currency      String? @db.VarChar(12)
+  status        String  @db.VarChar(81)
+  amount        Float   @default(0.00) @db.Float
+  recipientName String? @db.VarChar(191)
+  description   String? @db.VarChar(191)
+  reference     String? @db.VarChar(191)
+  meta          Json?
+  type          String? @db.VarChar(81)
+  createdAt     DateTime
+  updatedAt     DateTime @default(now())
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model TransferBeneficiary {
+  id              String @id @default(cuid())
+  accountHolder   String @db.VarChar(191)
+  accountNumber   String? @db.VarChar(191)
+  bankName        String? @db.VarChar(191)
+  currency        String? @db.VarChar(50)
+  address         Address? @relation(fields: [addressId], references: [id])
+  addressId       String?
+  createdAt       DateTime 
+  updatedAt       DateTime @default(now())
+
+  userId          String
+  user            User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, accountHolder, accountNumber, bankName])
 }

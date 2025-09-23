@@ -207,6 +207,19 @@ async function webhookController(req, res){
                 console.log(error);
             }
         }
+    }else if(body.event === 'transfer.successful'){
+        console.log('Transfer successful', body);
+        const reference = body.id;
+        const transaction = await db.transaction.findFirst({
+            where: { reference: reference }
+        });
+        if(transaction){
+            await db.transaction.update({
+                where: { id: transaction.id },
+                data: { status: 'successful' }
+            });
+
+        }
     }else{
         console.log('Webhook received', body.event);
     }
