@@ -109,7 +109,7 @@ router.post('/send', async (req, res) => {
             });
         }
 
-        const bankCode = currency == 'NGN' ? '825' : '058';
+        const bankCode = currency == 'NGN' ? '825' : '825';
         try {
             const balance = await db.balance.findFirst({
                 where: {
