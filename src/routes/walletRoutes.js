@@ -21,10 +21,10 @@ router.get('/balance', async (req, res) => {
             });
         }
 
-        return res.status(200).json({
+        return res.status(201).json({
             message: 'Balance retrieved successfully',
             success: true,
-            status: 200,
+            status: 201,
             data: {
                 balance: balances[0].amount,
                 currency: balances[0].currency
@@ -67,10 +67,10 @@ router.get('/accounts', async (req, res) => {
             });
         }
 
-        return res.status(200).json({
+        return res.status(201).json({
             message: 'Accounts retrieved successfully',
             success: true,
-            status: 200,
+            status: 201,
             data: accounts
         });
     } catch (error) {
@@ -136,8 +136,7 @@ router.post('/send', async (req, res) => {
                 amount: convertedAmount, 
                 currency, 
                 account_number: accountNumber, 
-                bank_code: bankCode,
-                // reference: description
+                bank_code: bankCode
             });
 
             await db.balance.update({
@@ -167,68 +166,65 @@ router.post('/send', async (req, res) => {
                 }
             });
 
-            // CHANGED: wrap in a transaction so the address create + upsert stay consistent
-            await db.$transaction(async (tx) => { // CHANGED
-                // CHANGED: create the address first and use its id in the create branch
-                const newAddr = await tx.address.create({ // CHANGED
-                data: {                                   // CHANGED
-                    street: street,                         // CHANGED
-                    city: city,                             // CHANGED
-                    state: state,                           // CHANGED
-                    country: country,                       // CHANGED
-                    postalCode: postalCode                  // CHANGED
-                }                                         // CHANGED
-                });                                         // CHANGED
-            
-                await tx.transferBeneficiary.upsert({ // CHANGED: tx.*
-                where: {
-                    userId_accountHolder_accountNumber_bankName: {
-                    userId: req.user.id,
-                    accountHolder: accountHolder,
-                    accountNumber: accountNumber,
-                    bankName: bankName
-                    }
-                },
-                update: {
-                    currency: currency,
-                    // keep relation update as a nested write
-                    address: {
-                    upsert: {
-                        create: {
+            await db.$transaction(async (tx) => {
+                const newAddr = await tx.address.create({
+                    data: {
                         street: street,
                         city: city,
                         state: state,
                         country: country,
                         postalCode: postalCode
-                        },
-                        update: {
-                        street: street,
-                        city: city,
-                        state: state,
-                        country: country,
-                        postalCode: postalCode
-                        }
                     }
-                    }
-                },
-                create: {
-                    userId: req.user.id,
-                    accountHolder: accountHolder,
-                    accountNumber: accountNumber,
-                    bankName: bankName,
-                    currency: currency,
-                    createdAt: new Date(),              // CHANGED: required by your schema
-                    addressId: newAddr.id               // CHANGED: use FK instead of nested { address: { create: ... } }
-                }
                 });
-            }); // CHANGED
+            
+                await tx.transferBeneficiary.upsert({
+                    where: {
+                        userId_accountHolder_accountNumber_bankName: {
+                        userId: req.user.id,
+                        accountHolder: accountHolder,
+                        accountNumber: accountNumber,
+                        bankName: bankName
+                        }
+                    },
+                    update: {
+                        currency: currency,
+                        address: {
+                        upsert: {
+                            create: {
+                            street: street,
+                            city: city,
+                            state: state,
+                            country: country,
+                            postalCode: postalCode
+                            },
+                            update: {
+                            street: street,
+                            city: city,
+                            state: state,
+                            country: country,
+                            postalCode: postalCode
+                            }
+                        }
+                        }
+                    },
+                    create: {
+                        userId: req.user.id,
+                        accountHolder: accountHolder,
+                        accountNumber: accountNumber,
+                        bankName: bankName,
+                        currency: currency,
+                        createdAt: new Date(),    
+                        addressId: newAddr.id
+                    }
+                });
+            });
   
             
 
-            return res.status(200).json({
+            return res.status(201).json({
                 message: 'Transfer in progress',
                 success: true,
-                status: 200,
+                status: 201,
                 data: {
                     amount: parseFloat(amount),
                     currency: currency
@@ -324,10 +320,10 @@ router.post('/fund', async (req, res) => {
             }
         });
 
-        return res.status(200).json({
+        return res.status(201).json({
             message: 'Wallet funded successfully',
             success: true,
-            status: 200,
+            status: 201,
             data: {
                 balance: parseFloat(balance[0].amount) + parseFloat(amount),
                 currency: currency
@@ -371,14 +367,144 @@ router.get('/expenses-income', async (req, res) => {
             totalIncome += income.amount;
         });
 
-        return res.status(200).json({
+        return res.status(201).json({
             message: 'Expenses and income retrieved successfully',
             success: true,
-            status: 200,
+            status: 201,
             data: {
                 expenses: totalExpenses,
                 income: totalIncome,
                 currency: currency
+            }
+        });
+    }catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: error.message,
+            success: false,
+            status: 500
+        });
+    }
+});
+
+router.post('/convert', async (req, res) => {
+    if(!req.body) {
+        return res.status(400).json({
+            message: 'Invalid request body',
+            success: false,
+            status: 400
+        });
+    }
+    const { amount, fromCurrency, toCurrency } = req.body;
+    if(!amount || !fromCurrency || !toCurrency) {
+        return res.status(400).json({
+            message: 'All fields are required',
+            success: false,
+            status: 400
+        });
+    }
+    if(fromCurrency != 'USD' && fromCurrency != 'NGN' && toCurrency != 'USD' && toCurrency != 'NGN') {
+        return res.status(400).json({
+            message: 'Invalid currency',
+            success: false,
+            status: 400
+        });
+    }
+    if(fromCurrency == toCurrency) {
+        return res.status(400).json({
+            message: 'From and to currency cannot be the same',
+            success: false,
+            status: 400
+        });
+    }
+    if(amount <= 0) {
+        return res.status(400).json({
+            message: 'Amount must be greater than 0',
+            success: false,
+            status: 400
+        });
+    }
+    try {
+        const convertedAmount = amount * 100; //in cents
+        const fromBalance = await db.balance.findFirst({
+            where: {
+                userId: req.user.id,
+                currency: fromCurrency
+            }
+        });
+        if(!fromBalance) {
+            return res.status(400).json({
+                message: 'Balance not found',
+                success: false,
+                status: 400
+            });
+        }
+        if(fromBalance.amount < amount) {
+            return res.status(400).json({
+                message: 'Insufficient balance',
+                success: false,
+                status: 400
+            });
+        }
+        const convertCurrency = await mapleradService.convertCurrency({ amount: convertedAmount, fromCurrency, toCurrency });
+        if(!convertCurrency) {
+            return res.status(400).json({
+                message: 'Failed to convert currency',
+                success: false,
+                status: 400
+            });
+        }
+        await db.balance.update({
+            where: { id: fromBalance.id },
+            data: { amount: { decrement: amount } }
+        });
+
+        const toBalance = await db.balance.findFirst({
+            where: {
+                userId: req.user.id,
+                currency: toCurrency
+            }
+        });
+        if(!toBalance) {
+            await db.balance.create({
+                data: {
+                    userId: req.user.id,
+                    currency: toCurrency,
+                    amount: parseFloat(convertCurrency.target.amount / 100)
+                }
+            });
+        }
+
+        await db.balance.update({
+            where: { id: toBalance.id },
+            data: { amount: { increment: parseFloat(convertCurrency.target.amount / 100) } }
+        });
+
+        await db.transaction.create({
+            data: {
+                userId: req.user.id,
+                amount: parseFloat(convertCurrency.target.amount / 100),
+                currency: toCurrency,
+                status: 'successful',
+                type: 'convert_currency',
+                recipientName: 'Self',
+                createdAt: new Date(),
+                meta: {
+                    fromCurrency: fromCurrency,
+                    toCurrency: toCurrency,
+                    rate: convertCurrency.rate
+                }
+            }
+        });
+
+        return res.status(201).json({
+            message: 'Currency converted successfully',
+            success: true,
+            status: 201,
+            data: {
+                amount: parseFloat(convertCurrency.target.amount / 100),
+                currency: toCurrency,
+                rate: convertCurrency.rate
             }
         });
     }catch (error) {

@@ -34,7 +34,27 @@ async function transferMoney(data) {
     return res.data.data;
 }
 
+async function convertCurrency(data) {
+    const { amount, fromCurrency, toCurrency } = data;
+    const res = await mapleradAxios.post('fx/quote', {
+        amount,
+        source_currency: fromCurrency,
+        target_currency: toCurrency,
+    });
+
+    const reference = res?.data?.data?.reference ?? null;
+    if(!reference) {
+        return null;
+    }
+    const exchange = await mapleradAxios.post('fx', {
+        quote_reference: reference
+    });
+
+    return exchange.data.data;
+}
+
 module.exports = {
     creditTestWallet,
-    transferMoney
+    transferMoney,
+    convertCurrency
 }
