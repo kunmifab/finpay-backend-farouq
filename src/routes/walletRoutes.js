@@ -146,7 +146,7 @@ router.post('/send', async (req, res) => {
 
             if(!creditWallet) {
                 return res.status(400).json({
-                    message: 'Failed to fund wallet',
+                    message: 'Failed to send money',
                     success: false,
                     status: 400
                 });
@@ -245,6 +245,101 @@ router.post('/send', async (req, res) => {
         success: false,
         status: 400
     });
+    
+});
+
+router.post('/withdraw', async (req, res) => {
+    if(!req.body) {
+        return res.status(400).json({
+            message: 'Invalid request body',
+            success: false,
+            status: 400
+        });
+    }
+
+    const { amount, currency, recievingCurrency, accountNumber, accountHolder, bankName } = req.body;
+    if(!accountNumber || !accountHolder || !bankName || !amount || !currency || !recievingCurrency) {
+        return res.status(400).json({
+            message: 'All fields are required',
+            success: false,
+            status: 400
+        });
+    }
+
+    const bankCode = currency == 'NGN' ? '825' : '825';
+    try {
+        const balance = await db.balance.findFirst({
+            where: {
+                userId: req.user.id,
+                currency: currency
+            }
+        });
+        if(!balance) {
+            return res.status(400).json({
+                message: 'Balance not found',
+                success: false,
+                status: 400
+            });
+        }
+        if(balance.amount < amount) {
+            return res.status(400).json({
+                message: 'Insufficient balance',
+                success: false,
+                status: 400
+            });
+        }
+        const convertedAmount = amount * 100; //in cents
+        const creditWallet = await mapleradService.transferMoney({ 
+            amount: convertedAmount, 
+            currency, 
+            account_number: accountNumber, 
+            bank_code: bankCode
+        });
+
+        await db.balance.update({
+            where: { id: balance.id },
+            data: { amount: { decrement: amount } }
+        });
+
+        if(!creditWallet) {
+            return res.status(400).json({
+                message: 'Failed to withdraw money',
+                success: false,
+                status: 400
+            });
+        }
+
+        await db.transaction.create({
+            data: {
+                userId: req.user.id,
+                amount: parseFloat(amount),
+                currency: currency,
+                status: 'pending',
+                recipientName: "Self",
+                description: 'Withdrawal',
+                reference: creditWallet.id,
+                createdAt: new Date(),
+                type: 'debit'
+            }
+        });            
+
+        return res.status(201).json({
+            message: 'Withdrawal in progress',
+            success: true,
+            status: 201,
+            data: {
+                amount: parseFloat(amount),
+                currency: currency
+            }
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: error.message,
+            success: false,
+            status: 500
+        });
+    }
     
 });
 
