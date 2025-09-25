@@ -11,6 +11,7 @@ const cardRoutes = require('./routes/cardRoutes');
 const mapleradWebhookRoute = require('./routes/mapleradWebhookRoute');
 const walletRoutes = require('./routes/walletRoutes');
 const openApiSpec = require('./docs/openapi');
+const transactionRoutes = require('./routes/transactionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,7 @@ app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);
 app.use('/api', authenticate, dashboardRoutes);
 app.use('/api/invoices', authenticate, invoiceRoutes);
+app.use('/api/transactions', authenticate, transactionRoutes);
 app.use('/api/cards', authenticate, cardRoutes);
 app.use('/api/wallets', authenticate, walletRoutes);
 

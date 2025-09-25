@@ -1,4 +1,4 @@
-﻿const packageJson = require('../../package.json');
+const packageJson = require('../../package.json');
 
 const apiVersion = packageJson.version || '1.0.0';
 
@@ -47,6 +47,7 @@ const spec = {
     { name: 'Dashboard', description: 'Aggregated balances and rates' },
     { name: 'Invoices', description: 'Invoice management endpoints' },
     { name: 'Cards', description: 'Virtual card lifecycle management' },
+    { name: 'Transactions', description: 'Wallet and payout transaction history' },
     { name: 'Wallets', description: 'Wallet balances, transfers and conversions' },
     { name: 'Webhooks', description: 'Inbound Maplerad webhook processing' }
   ],
@@ -338,6 +339,40 @@ const spec = {
           rate: { type: ['number', 'string'] }
         },
         required: ['amount', 'currency', 'rate']
+      },
+      TransactionRecord: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          receivingCurrency: { type: ['string', 'null'] },
+          status: { type: ['string', 'null'] },
+          amount: { type: 'number' },
+          recipientName: { type: ['string', 'null'] },
+          description: { type: ['string', 'null'] },
+          type: { type: ['string', 'null'] },
+          transactionDate: { type: ['string', 'null'], format: 'date' }
+        },
+        required: ['id', 'amount']
+      },
+      PaginatedTransactions: {
+        type: 'object',
+        allOf: [
+          { $ref: '#/components/schemas/StandardResponse' },
+          {
+            properties: {
+              totalFetched: { type: 'integer' },
+              transactionStatus: { type: 'string' },
+              transactionTotal: { type: 'integer' },
+              page: { type: 'integer' },
+              limit: { type: 'integer' },
+              totalPages: { type: 'integer' },
+              data: {
+                type: 'array',
+                items: { $ref: '#/components/schemas/TransactionRecord' }
+              }
+            }
+          }
+        ]
       },
       MapleradWebhookEnvelope: {
         type: 'object',
@@ -1263,6 +1298,62 @@ const spec = {
           '500': { $ref: '#/components/responses/ServerError' }
         }
       }
+    },
+    '/api/transactions': {
+      get: {
+        tags: ['Transactions'],
+        summary: 'List transactions with filters',
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1 }, description: 'Page number (default 1)' },
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100 }, description: 'Page size (default 10)' },
+          { name: 'status', in: 'query', schema: { type: 'string', enum: ['all', 'pending', 'successful', 'failed', 'due', 'overdue'] }, description: 'Status filter' },
+          { name: 'search', in: 'query', schema: { type: 'string' }, description: 'Search term applied to name, description, reference, currency or type' },
+          { name: 'startDate', in: 'query', schema: { type: 'string', format: 'date-time' }, description: 'ISO start date filter applied to createdAt' },
+          { name: 'endDate', in: 'query', schema: { type: 'string', format: 'date-time' }, description: 'ISO end date filter applied to createdAt' }
+        ],
+        responses: {
+          '200': {
+            description: 'Transactions retrieved',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/PaginatedTransactions' }
+              }
+            },
+          },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '500': { $ref: '#/components/responses/ServerError' }
+        },
+      },
+    },
+    '/api/transactions/{id}': {
+      get: {
+        tags: ['Transactions'],
+        summary: 'Fetch a single transaction by id',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } }
+        ],
+        responses: {
+          '200': {
+            description: 'Transaction retrieved',
+            content: {
+              'application/json': {
+                schema: {
+                  allOf: [
+                    { $ref: '#/components/schemas/StandardResponse' },
+                    {
+                      properties: {
+                        data: { $ref: '#/components/schemas/TransactionRecord' }
+                      }
+                    },
+                  ],
+                },
+              }
+            },
+          },
+          '404': { $ref: '#/components/responses/NotFound' },
+          '500': { $ref: '#/components/responses/ServerError' }
+        },
+      },
     },
     '/webhooks/maplerad': {
       post: {
