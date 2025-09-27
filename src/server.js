@@ -10,13 +10,17 @@ const invoiceRoutes = require('./routes/invoiceRoutes');
 const cardRoutes = require('./routes/cardRoutes');
 const mapleradWebhookRoute = require('./routes/mapleradWebhookRoute');
 const walletRoutes = require('./routes/walletRoutes');
-const openApiSpec = require('./docs/openapi');
 const transactionRoutes = require('./routes/transactionRoutes');
+const openApiSpec = require('./docs/openapi');
+const { httpLogger, logger, rTracer } = require('./utils/logger');
+const { createErrorHandler } = require('./middlewares/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
+app.use(rTracer.expressMiddleware({ useHeader: true, headerName: 'x-request-id', echoHeader: true }));
+app.use(httpLogger);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, { explorer: true }));
 app.get('/docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -34,6 +38,8 @@ app.use('/api/wallets', authenticate, walletRoutes);
 
 startExchangeRateJob();
 
+app.use(createErrorHandler());
+
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    logger.info({ port: PORT }, 'Server is running');
 });

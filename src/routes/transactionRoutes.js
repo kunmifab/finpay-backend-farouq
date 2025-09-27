@@ -1,6 +1,7 @@
 ﻿const express = require('express');
 const router = express.Router();
 const db = require('../utils/db/prisma');
+const { getRequestLogger } = require('../utils/logger');
 
 const buildDateFilter = (startDate, endDate) => {
     const createdAt = {};
@@ -45,7 +46,8 @@ const toResponseDto = (transaction) => {
     };
 };
 
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
+    const log = getRequestLogger({ module: 'transactions', handler: 'list' });
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
@@ -61,6 +63,7 @@ router.get('/', async (req, res) => {
         if (startDateParam) {
             const parsedStart = new Date(startDateParam);
             if (Number.isNaN(parsedStart.getTime())) {
+                log.warn({ startDateParam }, 'Invalid startDate provided');
                 return res.status(400).json({
                     message: 'Invalid startDate. Use an ISO 8601 string.',
                     success: false,
@@ -73,6 +76,7 @@ router.get('/', async (req, res) => {
         if (endDateParam) {
             const parsedEnd = new Date(endDateParam);
             if (Number.isNaN(parsedEnd.getTime())) {
+                log.warn({ endDateParam }, 'Invalid endDate provided');
                 return res.status(400).json({
                     message: 'Invalid endDate. Use an ISO 8601 string.',
                     success: false,
@@ -83,6 +87,7 @@ router.get('/', async (req, res) => {
         }
 
         if (startDate && endDate && startDate > endDate) {
+            log.warn({ startDate, endDate }, 'startDate is later than endDate');
             return res.status(400).json({
                 message: 'startDate cannot be later than endDate.',
                 success: false,
@@ -127,23 +132,13 @@ router.get('/', async (req, res) => {
             data: transactionData
         });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            message: error.message,
-            success: false,
-            status: 500
-        });
+        log.error({ err: error }, 'Failed to fetch transactions');
+        next(error);
     }
 });
 
-router.get('/:id', async (req, res) => {
-    if(!req.params.id) {
-        return res.status(400).json({
-            message: 'Transaction ID is required',
-            success: false,
-            status: 400
-        });
-    }
+router.get('/:id', async (req, res, next) => {
+    const log = getRequestLogger({ module: 'transactions', handler: 'detail' });
     try {
         const transaction = await db.transaction.findFirst({
             where: {
@@ -153,6 +148,7 @@ router.get('/:id', async (req, res) => {
         });
 
         if (!transaction) {
+            log.warn({ transactionId: req.params.id }, 'Transaction not found');
             return res.status(404).json({
                 message: 'Transaction not found',
                 success: false,
@@ -167,12 +163,8 @@ router.get('/:id', async (req, res) => {
             data: toResponseDto(transaction)
         });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({
-            message: error.message,
-            success: false,
-            status: 500
-        });
+        log.error({ err: error, transactionId: req.params.id }, 'Failed to fetch transaction detail');
+        next(error);
     }
 });
 

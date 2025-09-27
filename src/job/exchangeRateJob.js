@@ -1,16 +1,18 @@
-const cron = require('node-cron');
+﻿const cron = require('node-cron');
 const db = require('../utils/db/prisma');
+const { getChildLogger } = require('../utils/logger');
 
 try { require('dotenv').config(); } catch {}
 
 const API_KEY = process.env.EXCHANGE_RATE_API_KEY;
+const log = getChildLogger({ module: 'exchange-rate-job' });
 
 async function fetchAndStoreExchangeRate() {
-    console.log('Fetching and storing latest exchange rates...');
+    log.info('Fetching and storing latest exchange rates');
     const baseCurrency = 'USD';
 
     if (!API_KEY) {
-        console.error('EXCHANGE_RATE_API_KEY is not set');
+        log.error('EXCHANGE_RATE_API_KEY is not set');
         return;
     }
 
@@ -32,13 +34,11 @@ async function fetchAndStoreExchangeRate() {
             const ngnRate = exchangeRates.NGN;
             const cadRate = exchangeRates.CAD;
 
-            // provider timestamp (v6 returns time_last_update_utc)
             const effectiveAt = data.time_last_update_utc
                 ? new Date(data.time_last_update_utc)
                 : new Date();
 
-            // Use `upsert` to either create or update the record.
-            const exchangeRate = await db.exchangeRate.upsert({
+            await db.exchangeRate.upsert({
                 where: {
                     base: baseCurrency,
                 },
@@ -60,13 +60,13 @@ async function fetchAndStoreExchangeRate() {
                 },
             });
 
-            console.log('Exchange rates fetched and stored successfully');
+            log.info('Exchange rates fetched and stored successfully');
         } else {
-            console.log('Error fetching exchange rates:', data['error-type'] || data);
+            log.warn({ error: data['error-type'] || data }, 'Exchange rate provider returned error response');
         }
 
     } catch (error) {
-        console.error('Error fetching exchange rates:', error);
+        log.error({ err: error }, 'Error fetching exchange rates');
     }
 }
 
@@ -74,7 +74,7 @@ const startExchangeRateJob = () => {
     cron.schedule('0 * * * *', () => {
         fetchAndStoreExchangeRate();
     });
-    console.log('Exchange rate scheduler started. It will run every hour.');
+    log.info('Exchange rate scheduler started. It will run every hour.');
 };
 
 module.exports = {
