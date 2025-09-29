@@ -13,7 +13,7 @@ const walletRoutes = require('./routes/walletRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const openApiSpec = require('./docs/openapi');
 const { httpLogger, logger, rTracer } = require('./utils/logger');
-const { createErrorHandler } = require('./middlewares/errorHandler');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,10 +35,9 @@ app.use('/api/invoices', authenticate, invoiceRoutes);
 app.use('/api/transactions', authenticate, transactionRoutes);
 app.use('/api/cards', authenticate, cardRoutes);
 app.use('/api/wallets', authenticate, walletRoutes);
+app.use('/api/notifications', authenticate, notificationRoutes);
 
 startExchangeRateJob();
-
-app.use(createErrorHandler());
 
 app.listen(PORT, () => {
     logger.info({ port: PORT }, 'Server is running');
