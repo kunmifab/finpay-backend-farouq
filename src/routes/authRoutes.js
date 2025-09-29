@@ -6,9 +6,11 @@ const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../utils/mailers');
 const { renderTemplate } = require('../utils/templateEngine');
 const authenticate = require('../middlewares/authenticate');
+const { getRequestLogger } = require('../utils/logger');
 
 const { postSignupQueue } = require('../job/queues');
 router.post('/register', async (req, res) => {
+    const log = getRequestLogger({ module: 'auth', handler: 'register' });
     if(!req.body) {
         return res.status(400).json(
             { message: 'Please provide all fields',
@@ -63,7 +65,7 @@ router.post('/register', async (req, res) => {
             });
         
         } catch (err) {
-            console.error("Email send failed:", err);
+            log.warn({ err, userId: user.id }, 'Email send failed');
         }
         const token = jwt.sign({ 
                 id: user.id, email: user.email, name: user.name, phone: user.phoneNumber 
@@ -120,7 +122,7 @@ router.post('/register', async (req, res) => {
             }
         });
     } catch (error) {
-        console.log(error);
+        log.error({ err }, 'Registeration failed');
         res.status(500).json(
             { message: error.message,
                 success: false,

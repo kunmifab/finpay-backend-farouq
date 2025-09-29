@@ -4,6 +4,7 @@ const router = express.Router();
 const db = require('../utils/db/prisma');
 const cardService = require('../services/maplerad/cardService');
 const { getVirtualAccountById, checkAccountRequestStatus } = require('../services/maplerad/mapleradCustomers');
+const { getRequestLogger } = require('../utils/logger');
 
 require('dotenv').config();
 
@@ -45,7 +46,7 @@ function extractV1(sigHeader) {
 }                                                                          
 
 async function webhookController(req, res){
-
+    const log = getRequestLogger({ module: 'mapleradWebhook'});
     const rawBody = req.body
     const svixId = req.headers["svix-id"]
     const svixTimestamp = req.headers["svix-timestamp"]
@@ -144,38 +145,42 @@ async function webhookController(req, res){
     
             console.log('Updating card');
     
-            // CHANGED: Resolve the card's ID first, allowing either `reference` or `card_reference`
-            const card = await db.card.findFirst({ // CHANGED
-                where: {                          // CHANGED
-                    OR: [                         // CHANGED
-                        { reference: reference }, // CHANGED
-                        { card_reference: reference } // CHANGED
-                    ]                             // CHANGED
-                }                                 // CHANGED
-            });                                   // CHANGED
+            const card = await db.card.findFirst({ 
+                where: {                          
+                    OR: [                         
+                        { reference: reference }, 
+                        { card_reference: reference } 
+                    ]                             
+                }                                 
+            });                                   
     
-            if (!card) {                          // CHANGED
-                console.warn('No Card found for reference:', reference); // CHANGED
-                // If you want to auto-create here, you need holder_name, userId, and createdAt.
-                // See note below. For now, just exit gracefully to avoid P2025.
-                return;                           // CHANGED
-            }                                     // CHANGED
+            if (!card) {                          
+                console.warn('No Card found for reference:', reference); 
+                return;                           
+            }                                     
     
-            // CHANGED: Update by unique `id`, and keep nested address upsert
-            await db.card.update({                // CHANGED
-                where: { id: card.id },           // CHANGED
-                data: {                           // CHANGED
-                    ...data,                      // CHANGED
-                    ...(addr ? {                  // CHANGED
-                        address: {                // CHANGED
-                            upsert: {             // CHANGED
+            await db.card.update({                
+                where: { id: card.id },           
+                data: {                           
+                    ...data,                      
+                    ...(addr ? {                  
+                        address: {                
+                            upsert: {             
                                 create: { ...addr },
                                 update: { ...addr }
                             }
                         }
                     } : {})
                 }
-            });                                    // CHANGED
+            });
+
+            await db.notification.create({
+                data: {
+                    title: 'Card Creation Update',
+                    message: 'Card created successfully',
+                    userId: card.userId
+                }
+            });
     
             console.log('Card updated successfully');
         }
@@ -220,6 +225,14 @@ async function webhookController(req, res){
             });
 
         }
+        
+        await db.notification.create({
+            data: {
+                title: 'Transfer Update',
+                message: 'Transfer with reference ' + reference + ' successful',
+                userId: transaction.userId
+            }
+        });
     }else{
         console.log('Webhook received', body.event);
     }

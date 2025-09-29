@@ -1,5 +1,4 @@
-﻿const { Worker } = require('bullmq');
-const { connection, POST_SIGNUP_QUEUE } = require('./queues');
+﻿const { createWorker, POST_SIGNUP_QUEUE } = require('./queues');
 const db = require('../utils/db/prisma');
 const { ensureUserFinancialSetup } = require('../services/financialAccounts.service');
 const { ensureUserFinancialSetupMaplerad } = require('../services/maplerad/financialAccounts.service');
@@ -9,12 +8,17 @@ require('dotenv').config();
 
 const baseLogger = getChildLogger({ module: 'post-signup-worker' });
 
-const worker = new Worker(
+const worker = createWorker(
   POST_SIGNUP_QUEUE,
   async (job) => {
     const log = baseLogger.child({ jobId: job.id });
     const { userId } = job.data;
     log.info({ userId }, 'Processing post-signup job');
+
+    if (!userId) {
+      log.error('Job missing userId');
+      throw new Error('Post-signup job missing userId');
+    }
 
     const user = await db.user.findUnique({ where: { id: userId } });
     if (!user) {
@@ -29,7 +33,7 @@ const worker = new Worker(
       await createVirtualAccountUSD(mapleradResult.customerId, user);
     } catch (error) {
       log.error({ err: error }, 'Failed to create virtual accounts');
-      throw new Error('Failed to create virtual account');
+      throw error;
     }
 
     if (!user.stripeConnectId && result.connectAccountId) {
@@ -51,15 +55,10 @@ const worker = new Worker(
       pending: !!result.pending,
     };
   },
-  { connection, concurrency: 3 }
+  {
+    concurrency: Number(process.env.POST_SIGNUP_WORKER_CONCURRENCY || 3),
+    lockDuration: Number(process.env.POST_SIGNUP_WORKER_LOCK_DURATION || 60000)
+  }
 );
-
-worker.on('completed', (job) => {
-  baseLogger.info({ jobId: job.id }, 'Post-signup job completed');
-});
-
-worker.on('failed', (job, err) => {
-  baseLogger.error({ jobId: job?.id, err }, 'Post-signup job failed');
-});
 
 module.exports = worker;

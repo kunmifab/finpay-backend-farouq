@@ -156,6 +156,14 @@ router.get('/:id', async (req, res, next) => {
             });
         }
 
+        await db.notification.create({
+            data: {
+                title: 'Transaction Update',
+                message: 'Transaction retrieved successfully',
+                userId: transaction.userId
+            }
+        });
+
         res.status(200).json({
             message: 'Transaction retrieved successfully',
             success: true,
