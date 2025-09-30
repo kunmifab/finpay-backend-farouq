@@ -1,8 +1,8 @@
--- DropForeignKey
-ALTER TABLE `account` DROP FOREIGN KEY `Account_userId_fkey`;
+﻿-- DropForeignKey
+ALTER TABLE `Account` DROP FOREIGN KEY `Account_userId_fkey`;
 
 -- DropIndex
-DROP INDEX `Account_userId_currency_provider_key` ON `account`;
+DROP INDEX `Account_userId_currency_provider_key` ON `Account`;
 
 -- AlterTable
-ALTER TABLE `account` MODIFY `provider` VARCHAR(50) NULL;
+ALTER TABLE `Account` MODIFY `provider` VARCHAR(50) NULL;
