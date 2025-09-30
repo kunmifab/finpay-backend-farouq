@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE `User` (
-    `id` CHAR(36) NOT NULL,
+    `id` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NULL,
@@ -152,6 +152,52 @@ CREATE TABLE `Address` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `Transaction` (
+    `id` VARCHAR(191) NOT NULL,
+    `currency` VARCHAR(12) NULL,
+    `status` VARCHAR(81) NOT NULL,
+    `amount` FLOAT NOT NULL DEFAULT 0.00,
+    `recipientName` VARCHAR(191) NULL,
+    `description` VARCHAR(191) NULL,
+    `reference` VARCHAR(191) NULL,
+    `meta` JSON NULL,
+    `type` VARCHAR(81) NULL,
+    `createdAt` DATETIME(3) NOT NULL,
+    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `userId` VARCHAR(191) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `TransferBeneficiary` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountHolder` VARCHAR(191) NOT NULL,
+    `accountNumber` VARCHAR(191) NULL,
+    `bankName` VARCHAR(191) NULL,
+    `currency` VARCHAR(50) NULL,
+    `addressId` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL,
+    `updatedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `userId` VARCHAR(191) NOT NULL,
+
+    UNIQUE INDEX `TransferBeneficiary_userId_accountHolder_accountNumber_bankN_key`(`userId`, `accountHolder`, `accountNumber`, `bankName`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Notification` (
+    `id` VARCHAR(191) NOT NULL,
+    `title` VARCHAR(191) NOT NULL,
+    `message` VARCHAR(191) NOT NULL,
+    `isRead` BOOLEAN NOT NULL DEFAULT false,
+    `link` VARCHAR(191) NULL,
+    `userId` VARCHAR(191) NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `Balance` ADD CONSTRAINT `Balance_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -172,3 +218,15 @@ ALTER TABLE `Card` ADD CONSTRAINT `Card_addressId_fkey` FOREIGN KEY (`addressId`
 
 -- AddForeignKey
 ALTER TABLE `Card` ADD CONSTRAINT `Card_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Transaction` ADD CONSTRAINT `Transaction_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransferBeneficiary` ADD CONSTRAINT `TransferBeneficiary_addressId_fkey` FOREIGN KEY (`addressId`) REFERENCES `Address`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TransferBeneficiary` ADD CONSTRAINT `TransferBeneficiary_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Notification` ADD CONSTRAINT `Notification_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
