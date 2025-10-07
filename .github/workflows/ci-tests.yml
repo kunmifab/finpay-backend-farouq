@@ -17,6 +17,11 @@ jobs:
       JWT_EXPIRATION: 1h
       MAPLERAD_SECRET_KEY: test-maplerad-key
       REDIS_URL: redis://127.0.0.1:6379
+      MAIL_PROVIDER: smtp
+      MAIL_FALLBACK_PROVIDER: mailgun
+      MAILGUN_API_KEY: test-mailgun-key
+      MAILGUN_DOMAIN: example.test
+      MAIL_FROM: "FinPay <no-reply@example.test>"
       CI: true
     services:
       mysql:
@@ -60,6 +65,11 @@ jobs:
           JWT_EXPIRATION="1h"
           MAPLERAD_SECRET_KEY="test-maplerad-key"
           REDIS_URL="redis://127.0.0.1:6379"
+          MAIL_PROVIDER="smtp"
+          MAIL_FALLBACK_PROVIDER="mailgun"
+          MAILGUN_API_KEY="test-mailgun-key"
+          MAILGUN_DOMAIN="example.test"
+          MAIL_FROM="FinPay <no-reply@example.test>"
           ENVEOF
 
       - name: Install dependencies
