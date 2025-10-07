@@ -6,6 +6,7 @@
     "scripts": {
         "start": "node src/server.js",
         "dev": "nodemon src/server.js",
+        "build": "prisma generate", 
         "test": "npm run test:unit && npm run test:integration",
         "postinstall": "prisma generate",
         "prisma:generate": "prisma generate",
