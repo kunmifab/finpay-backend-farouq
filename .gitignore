@@ -6,3 +6,5 @@ node_modules
 
 /src/generated/prisma
 logs/
+.env.test
+test/.testcontainer-state.json
